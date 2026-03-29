@@ -8,7 +8,12 @@ app.use(express.json());
 
 
 app.use('/api/v1/schools',schoolRouter);
-
+app.get('/', (req, res) => {
+    res.json({
+        status: 'success',
+        message: 'School management Backend is running'
+    });
+});
 
 const checkDb  = async () => {
     try{
