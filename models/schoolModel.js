@@ -10,7 +10,7 @@ const schoolModel = {
   [name, address]); 
         return rows;
     },
-    create: (data) => db.query('INSERT INTO SCHOOL SET ?',[data])
+    create: (data) => db.query('INSERT INTO school SET ?',[data])
 }
 
 module.exports = schoolModel;
