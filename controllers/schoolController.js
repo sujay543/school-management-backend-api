@@ -35,7 +35,7 @@ exports.getSchools = async(req,res,next) => {
     {
         return res.status(404).json(
             {
-                status: 'success',
+                status: 'error',
                 message: 'no record found'
             }
         )
@@ -116,7 +116,7 @@ exports.addSchool = async (req,res) => {
 exports.listSchools = async(req,res,next) => {
     try{
    const {latitude,longitude} = req.query;
-    if (!latitude || !longitude) {
+    if (latitude == null || longitude == null) {
             return res.status(400).json({
                 status: 'error',
                 message: 'Please provide latitude and longitude'
