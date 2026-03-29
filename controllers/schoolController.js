@@ -105,6 +105,7 @@ exports.addSchool = async (req,res) => {
         }
     )
         }catch (error) {
+            console.error("ADD SCHOOL ERROR:", error);
             return res.status(500).json({
                 status: 'error',
                 message: 'Internal server error'
