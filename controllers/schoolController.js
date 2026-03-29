@@ -1,5 +1,33 @@
 const schoolModel = require('../models/schoolModel');
 
+function isValidCoordinates(lat, lon) {
+    return (
+        typeof lat === 'number' &&
+        typeof lon === 'number' &&
+        !isNaN(lat) &&
+        !isNaN(lon) &&
+        lat >= -90 && lat <= 90 &&
+        lon >= -180 && lon <= 180
+    );
+}
+
+function haversine(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Earth's radius in km
+
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lon2 - lon1) * (Math.PI / 180);
+
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * (Math.PI / 180)) *
+        Math.cos(lat2 * (Math.PI / 180)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c; // distance in km
+}
+
 exports.getSchools = async(req,res,next) => {
     try{
     const data = await schoolModel.getAll();
@@ -16,9 +44,7 @@ exports.getSchools = async(req,res,next) => {
     res.status(200).json(
         {
             status: 'success',
-            data: {
-                data
-            }
+             data
         }
     )
     }catch(err)
@@ -34,7 +60,7 @@ exports.getSchools = async(req,res,next) => {
 }
 
 
-exports.insertSchool = async (req,res) => {
+exports.addSchool = async (req,res) => {
     try{
     const {name, address , latitude, longitude} = req.body;
     if(!name || !address || latitude == null || longitude== null)
@@ -45,7 +71,17 @@ exports.insertSchool = async (req,res) => {
         });
     }
 
-    const data = await schoolModel.searchByname(name);
+  const lat = parseFloat(latitude);
+  const lng = parseFloat(longitude);
+    if(!isValidCoordinates(lat,lng))
+    {
+        return res.status(400).json({
+            status: 'error',
+            message: 'please enter valid coordinates'
+        })
+    }
+
+    const data = await schoolModel.searchBynameAndAddress(name,address);
     if(data.length != 0)
     {
          return res.status(409).json({
@@ -58,8 +94,8 @@ exports.insertSchool = async (req,res) => {
         {
             name: name,
             address: address,
-            longitude: longitude,
-            latitude: latitude
+            longitude: lng,
+            latitude: lat
         }
     )
     res.status(201).json(
@@ -69,11 +105,51 @@ exports.insertSchool = async (req,res) => {
         }
     )
         }catch (error) {
-            console.error(error);
             return res.status(500).json({
                 status: 'error',
                 message: 'Internal server error'
             });
         }
+}
 
+
+exports.listSchools = async(req,res,next) => {
+    try{
+   const {latitude,longitude} = req.query;
+    if (!latitude || !longitude) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Please provide latitude and longitude'
+            });
+        }
+    const lat = parseFloat(latitude);
+    const lng = parseFloat(longitude);
+    if(!isValidCoordinates(lat,lng))
+    {
+        return res.status(400).json({
+            status: 'error',
+            message: 'please enter valid coordinates'
+        })
+    }
+    const schools = await schoolModel.getAll();
+    const schoolsWithDistance = schools.map(school => ({
+    ...school,
+    distance: haversine(lat, lng, school.latitude, school.longitude)
+}));
+
+const sortedSchool = schoolsWithDistance.sort((a, b) => a.distance - b.distance);
+    res.status(200).json(
+        {
+            status: 'success',
+            data: sortedSchool
+        }
+    )
+}catch(err){
+    console.log(err);
+            return res.status(500).json({
+                status: 'error',
+                message: 'Internal server error'
+            });
+}
+    
 }
